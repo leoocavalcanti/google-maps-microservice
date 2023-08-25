@@ -1,0 +1,27 @@
+GET http://localhost:3000/routes
+
+###
+
+GET http://localhost:3000/routes/a6c36dd7-7167-435f-bcae-d7e1b994d461
+
+###
+
+POST http://localhost:3000/routes
+Content-Type: application/json
+
+{
+    "name": "route test 1",
+    "sourceId": "ChIJc6QgpJQYqwcRVQxDHCsG55M",
+    "destinationId": "ChIJgyYMKyMUqwcR7-vs6cnuHPc"
+}
+
+### MAPAS
+
+### PEGAR O PLACE_ID
+
+GET http://localhost:3000/places?text=paulista, pe
+
+### PEGAR DIREÇÕES ENTRE DOIS PONTOS
+
+GET http://localhost:3000/directions?originId=ChIJc6QgpJQYqwcRVQxDHCsG55M&destinationId=ChIJgyYMKyMUqwcR7-vs6cnuHPc
+

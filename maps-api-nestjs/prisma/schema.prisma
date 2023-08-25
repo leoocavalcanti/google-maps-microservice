@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Route {
+  id             String        @id @default(uuid())
+  name           String
+  source         Place         @relation("sourcePlace", fields: [source_id], references: [id])
+  destination    Place         @relation("destinationPlace", fields: [destination_id], references: [id])
+  distance       Float
+  duration       Float
+  directions     Json
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+  source_id      String
+  destination_id String
+  RouteDriver    RouteDriver[]
+
+  @@map("route")
+}
+
+model Place {
+  id                String  @id @default(uuid())
+  name              String
+  location          Coord   @relation(fields: [coord_id], references: [id])
+  route_source      Route[] @relation("sourcePlace")
+  route_destination Route[] @relation("destinationPlace")
+  coord_id          String
+}
+
+model Coord {
+  id     String  @id @default(uuid())
+  lat    Float
+  lng    Float
+  places Place[]
+  points Point[]
+}
+
+model RouteDriver {
+  id         String   @id @default(uuid())
+  route      Route    @relation(fields: [route_id], references: [id])
+  points     Point[]
+  route_id   String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Point {
+  id              String       @id @default(uuid())
+  name            String?
+  location        Coord        @relation(fields: [coord_id], references: [id])
+  route_driver    RouteDriver? @relation(fields: [route_driver_id], references: [id])
+  route_driver_id String?
+  coord_id        String
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+}
