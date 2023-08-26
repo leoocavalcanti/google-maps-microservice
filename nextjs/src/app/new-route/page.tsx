@@ -1,9 +1,14 @@
 'use client';
 
-import type { FindPlaceFromTextResponseData } from "@googlemaps/google-maps-services-js";
-import { FormEvent } from "react";
+import type { DirectionsResponseData, FindPlaceFromTextResponseData } from "@googlemaps/google-maps-services-js";
+import { FormEvent, useRef, useState } from "react";
+import { useMap } from "../hooks/useMap";
 
 function NewRoutePage() {
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const map = useMap(mapContainerRef);
+  const [directionsData, setDirectionsData] = useState<DirectionsResponseData & {request: any}>();
 
   const searchPlaces = async (e: FormEvent) => {
 
@@ -39,22 +44,70 @@ function NewRoutePage() {
       const placeDestinationId = destinationPlace.candidates[0].place_id;
 
       const directionsResponse = await fetch(`http://localhost:3000/directions?originId=${placeSourceId}&destinationId=${placeDestinationId}`);
-      const directionsData = await directionsResponse.json();
-      
+      const directionsData: DirectionsResponseData & {request: any} = await directionsResponse.json();
+      setDirectionsData(directionsData)
+      map?.removeAllRoutes();
+      await map?.addRouteWithIcons({
+
+        routeId: '1',
+        startMarkerOptions: {
+          position: directionsData.routes[0].legs[0].start_location
+        },
+        endMarkerOptions: {
+          position: directionsData.routes[0].legs[0].end_location
+        },
+        carMarkerOptions: {
+          position: directionsData.routes[0].legs[0].start_location
+        }
+      })
+  }
+
+  const createRoute = async () => {
+
+    const startAddress = directionsData!.routes[0].legs[0].start_address;
+    const endAddress = directionsData!.routes[0].legs[0].end_address;
+
+    const response = await fetch('http://localhost:3000/routes', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+
+        name: `${startAddress} - ${endAddress}}`,
+        sourceId: directionsData!.request.origin.place_id,
+        destinationId: directionsData!.request.destination.place_id,
+
+      })
+    });
+
+    const route = await response.json();
   }
 
   return (
-    <div>
-      <h1>Nova rota</h1>
-      <form className="flex flex-col" onSubmit={searchPlaces}>
-        <div>
-            <input id="source" type="text" placeholder="origem"/>
-        </div>
-        <div>
-            <input id="destination" type="text" placeholder="destino"/>
-        </div>
-        <button>Pesquisar</button>
-      </form>
+    <div className="flex flex-row h-full w-full">
+      <div>
+        <h1>Nova rota</h1>
+        <form className="flex flex-col" onSubmit={searchPlaces}>
+          <div>
+              <input id="source" type="text" placeholder="origem"/>
+          </div>
+          <div>
+              <input id="destination" type="text" placeholder="destino"/>
+          </div>
+          <button>Pesquisar</button>
+        </form>
+        {directionsData && (
+          <ul>
+            <li>Origem {directionsData.routes[0].legs[0].start_address}</li>
+            <li>Destino {directionsData.routes[0].legs[0].start_address}</li>
+            <li>
+              <button onClick={createRoute}>Criar rota</button>
+            </li>
+          </ul>
+        )}
+      </div>
+      <div ref={mapContainerRef} className="h-full w-full" id="map"></div>
     </div>
   );
 }
