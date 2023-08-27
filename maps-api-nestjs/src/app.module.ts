@@ -5,17 +5,24 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RoutesModule } from './routes/routes.module';
 import { ConfigModule } from '@nestjs/config';
 import { MapsModule } from './maps/maps.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    PrismaModule,
-    RoutesModule,
-    MapsModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+        }),
+        PrismaModule,
+        BullModule.forRoot({
+            redis: {
+                host: 'redis',
+                port: 6379,
+            },
+        }),
+        RoutesModule,
+        MapsModule,
+    ],
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule {}

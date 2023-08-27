@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Logger } from '@nestjs/common';
 
 async function bootstrap() {
+    const logger = new Logger(AppModule.name);
+
     const whitelist = [
         'http://localhost:3000',
         'http://localhost:3001',
@@ -24,12 +26,11 @@ async function bootstrap() {
                 }
                 if (
                     whitelist.includes(origin) || // Checks your whitelist
-                    !!origin.match(/localhost:3001$/) // Overall check for your domain
+                    !!origin.match(/dominio.com.br$/) // Overall check for your domain
                 ) {
-                    console.log('allowed cors for:', origin);
                     callback(null, true);
                 } else {
-                    console.log('blocked cors for:', origin);
+                    logger.warn(`Origin: ${origin} not allowed by CORS`);
                     callback(new ForbiddenException('Not allowed by CORS'), false);
                 }
             },

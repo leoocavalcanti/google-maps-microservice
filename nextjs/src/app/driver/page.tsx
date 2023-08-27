@@ -1,38 +1,49 @@
 'use client';
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useMap } from "../hooks/useMap";
 import useSwr from "swr";
 import { fetcher } from "../utils/http";
 import { Route } from "../utils/models";
+import { socket } from "../utils/socket-io";
+import { Button, NativeSelect, Typography } from "@mui/material";
+import { RouteSelect } from "../components/RouteSelect";
 
 function DriverPage() {
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useMap(mapContainerRef);
 
-  const {data: routes, error, isLoading} = useSwr<Route[]>('http://localhost:3000/routes', fetcher, {
+  useEffect(() => {
 
-    fallbackData: []
-  });
+    socket.connect();
+
+    return () => {
+
+      socket.disconnect();
+    };
+
+  }, []);
+
 
   const startRoute = async () => {
       
       const routeId = (document.getElementById("route") as HTMLSelectElement).value;
-      const response = await fetch(`http://localhost:3000/routes/${routeId}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/routes/${routeId}`);
       const route: Route = await response.json();
+      console.log(route)
       map?.removeAllRoutes();
       await map?.addRouteWithIcons({
 
         routeId: routeId,
         startMarkerOptions: {
-          position: route.directions.routes[0].legs[0].start_location
+          position: route.directions?.routes[0].legs[0].start_location
         },
         endMarkerOptions: {
-          position: route.directions.routes[0].legs[0].end_location
+          position: route.directions?.routes[0].legs[0].end_location
         },
         carMarkerOptions: {
-          position: route.directions.routes[0].legs[0].start_location
+          position: route.directions?.routes[0].legs[0].start_location
         }
       });
 
@@ -42,9 +53,19 @@ function DriverPage() {
 
         await sleep(2000)
         map?.moveCar(routeId, step.start_location)
+        socket.emit('new-points', {
+          routeId,
+          lat: step.start_location.lat,
+          lng: step.start_location.lng,
+        })
 
         await sleep(2000)
         map?.moveCar(routeId, step.end_location)
+        socket.emit('new-points', {
+          routeId,
+          lat: step.end_location.lat,
+          lng: step.end_location.lng,
+        })
 
       }
   }
@@ -52,17 +73,10 @@ function DriverPage() {
   return (
     <div className="flex flex-row h-full w-full">
       <div>
-        <h1>Minha viagem</h1>
+        <Typography sx={{mb: 3, textAlign: 'center'}} variant="h4">Minha viagem</Typography>
         <div className="flex flex-col">
-          <select id="route">
-              {isLoading && <option>Carregando rotas...</option>}
-              {routes!.map((route) => (
-                <option key={route.id} value={route.id}>
-                  {route.name}
-                </option>
-              ))}
-          </select>
-          <button onClick={startRoute}>Iniciar a viagem</button>
+          <RouteSelect id="route"/>
+          <Button variant="text" onClick={startRoute}>Iniciar a viagem</Button>
         </div>
         
       </div>
